@@ -1,7 +1,7 @@
 #ABSTRACT: A tiny plugin system for perl
 package Plugin::Tiny;
 {
-  $Plugin::Tiny::VERSION = '0.003';
+  $Plugin::Tiny::VERSION = '0.005';
 }
 use strict;
 use warnings;
@@ -10,6 +10,7 @@ use Class::Load 'load_class';
 use Moose;
 use namespace::autoclean;
 use Scalar::Util 'blessed';
+
 #use Data::Dumper;
 
 
@@ -21,7 +22,7 @@ has '_registry' => (    #href with phases and plugin objects
 );
 
 
-has 'debug'=>(is=>'ro', isa=>'Bool', default=> sub{0});
+has 'debug' => (is => 'ro', isa => 'Bool', default => sub {0});
 
 
 has 'prefix' => (is => 'ro', isa => 'Str');
@@ -53,13 +54,27 @@ sub register {
     $role = delete $args{role} if exists $args{role};
 
     load_class($plugin) or confess "Can't load '$plugin'";
- 
+
     if ($role && !$plugin->does($role)) {
         confess qq(Plugin '$plugin' doesn't do role '$role');
     }
-    $self->{_registry}{$phase} = $plugin->new(%args) || confess "Can't make $plugin";
+    $self->{_registry}{$phase} = $plugin->new(%args)
+      || confess "Can't make $plugin";
     print "register $plugin [$phase]\n" if $self->debug;
     return $self->{_registry}{$phase};
+}
+
+
+
+sub register_bundle {
+    my $self = shift;
+    my $bundle = shift or return;
+    foreach my $plugin (keys %{$bundle}) {
+        my %args = %{$bundle->{$plugin}};
+        $args{plugin} = $plugin;
+        $self->register(%args) or confess "Registering $plugin failed";
+    }
+    return $bundle;
 }
 
 
@@ -73,10 +88,9 @@ sub get_plugin {
 
 
 
-
 sub default_phase {
-    my $self   = shift;
-    my $plugin = shift;    #a class name
+    my $self = shift;
+    my $plugin = shift or return;    #a class name
 
     if ($self->prefix) {
         my $phase  = $plugin;
@@ -92,6 +106,7 @@ sub default_phase {
 }
 
 
+
 sub get_class {
     my $self = shift;
     my $plugin = shift or return;
@@ -101,17 +116,18 @@ sub get_class {
 
 
 sub get_phase {
-    my $self         = shift;
-    my $plugin       = shift or return;
+    my $self = shift;
+    my $plugin = shift or return;
     blessed($plugin);
     my $current_class = $self->get_class($plugin);
+
     #print 'z:['.join(' ', keys %{$self->{_registry}})."]\n";
     foreach my $phase (keys %{$self->{_registry}}) {
-        my $registered_class=blessed ($self->{_registry}{$phase});
+        my $registered_class = blessed($self->{_registry}{$phase});
         print "[$phase] $registered_class === $current_class\n";
         return $phase if ("$registered_class" eq "$current_class");
     }
-            
+
 }
 
 #
@@ -131,7 +147,7 @@ Plugin::Tiny - A tiny plugin system for perl
 
 =head1 VERSION
 
-version 0.003
+version 0.005
 
 =head1 SYNOPSIS
 
@@ -158,38 +174,75 @@ Plugin::Tiny is minimalistic plugin system for perl. Each plugin is associated
 with a keyword (referred to as phase). A limitation of Plugin::Tiny is that 
 each phase can have only one plugin. 
 
-=head2 Bundles of Plugins
+=head2 Your Plugins
 
-You can still create bundles of plugins if you hand the plugin system down to 
-the (bundeling) plugin. That way, you can load multiple plugins for one 
-phase (you still need distinct phase labels for each plugin).
+Plugin::Tiny requires that your plugins are objects (a package with new). 
+Plugin::Tiny uses Moose internally, but this being perl you are of course free 
+to use whatever object system you like:
 
-  #in your core
+    package My::Plugin; #a complete plugin that doesn't do very much
+    use Moose; 
+    
+    sub do_something {
+        print "Hello World\n";
+    }
+    
+    1;
+
+=head2 Recommendation: First Register Then Do Things
+
+Plugin::Tiny suggests that you first load all your plugins (during the 
+register) before you actually do something with them. Internal require/use of 
+your packages is deferred to runtime. You can control order in which plugins 
+are loaded (in the order you call C<register>), but if you manage to load all 
+of them before you do anything, you can forget about order.
+
+You know Plugin::Tiny's phases at compile time, but not which plugins will be
+loaded.
+
+=head2 Recommendation: Require a Plugin Role
+
+You may want to do a plugin role for all you plugins, e.g. to standardize
+the interface for your plugins. Perhaps to make sure that a specific sub is
+available in the plugin:
+
+  package My::Plugin; 
+  use Moose;
+  with 'Your::App::Role::Plugin';
+  #...
+
+=head2 Plugin Bundles
+
+You can create bundles of plugins if you hand the plugin system down to 
+the (bundleing) plugin. That way, you can load multiple plugins for one 
+phase. You still need unique phases for each plugin:
+
+  package My::Core;
   use Moose; #optional
   has 'plugins'=>(
     is=>'ro',
     isa=>'Plugin::Tiny', 
-    default=>sub{}
+    default=>sub{Plugin::Tiny->new},
   );
 
   $self->plugins->register(
     phase=>'Scan', 
-    plugin=>'Plugin::ScanBundle', 
+    plugin=>'PluginBundle', 
     plugins=>$self->plugins, #plugin system
   );
 
-  #in Plugin::ScanBundle
+  package PluginBundle;
   has 'plugins'=>(is=>'ro', isa=>'Plugin::Tiny', required=>1); 
-  $self->plugins->register (plugin=>'Plugin::Scan1'); 
-  $self->plugins->register (plugin=>'Plugin::Scan2'); 
+
+  #phase defaults to 'One' and 'Two' 
+  $self->plugins->register_bundle({Plugin::One=>{},Plugin::Two=>{}});
   
-  my $scan1=$self->plugins->get('Scan1');
-  $scan1->do_something(@args);  
-
-=head2 Require a Plugin Role
-
-You may want to do a plugin role for all you plugins, e.g. to standardize
-an interface etc.
+  #more or less the same as:    
+  $self->plugins->register (plugin=>'Plugin::One');  
+  $self->plugins->register (plugin=>'Plugin::Two'); 
+  
+  my $one=$self->plugins->get('One');
+  $one->do_something(@args);  
 
 =head1 ATTRIBUTES
 
@@ -215,15 +268,17 @@ register so save some typing and force plugins in your namespace:
 =head2 role
 
 Optional init argument. A default role to be applied to all plugins. Can be 
-overwritten in register.
+overwritten in C<register>.
 
 =head1 METHODS
 
-=head2 $ps->register(phase=>$phase, plugin=>$plugin_class);  
+=head2 register
 
 Registers a plugin, e.g. uses it and makes a new plugin object. Needs a
 plugin. If you don't specify a phase it, it uses a default phase from the 
 plugin class name. See method C<default_phae> for details.
+
+  $ps->register(phase=>$phase, plugin=>$plugin_class);  
 
 Optionally, you can also specify a role which your plugin will have to be able 
 to apply. Specify role=>undef to unset global roles.
@@ -243,30 +298,66 @@ named arguments.
 
 Returns the newly created plugin object on success. Confesses on error.
 
-=head2 $plugin=$ps->get_plugin ($phase);
+=head2 register_bundle;
 
-Returns the plugin object associated with the phase. Returns undef if no plugin
-is registered for this phase.
+Registers a bundle of plugins in no particular order. A bundle is just a 
+hashRef with info needed to issue a series of register calls (see C<register>).
 
-=head2 $ps->defaultPhase ($plugin_class);
+Confesses if a plugin cannot be registered. Otherwise returns $bundle or undef.
 
-Makes a default phase from a class name. If prefix is defined it use tail minus 
-'::'. Otherwise just last element of the class name.
+  sub bundle{
+    return {
+      'Store::One' => {   
+          phase  => 'Store',
+          role   => undef,
+          dbfile => $self->core->config->{main}{dbfile},
+        },
+       'Scan::Monitor'=> {   
+          core   => $self->core
+        },
+    };
+  }
+  $ps->register_bundle(bundle)
 
-For My::Plugin::Long::Example and prefix='My::Plugin::' this results in 
-'Long::Example' and without prefix it would be 'Example'.
+If you want to add or remove plugins, use hashref as usual:
+  undef $bundle->{$plugin}; #remove a plugin using package name
+  $bundle->{'My::Plugin'}={phase=>'foo'}; #add another plugin
 
-Returns scalar;
+To facilitate extending your plugins perhaps you put them the hashref in a 
+separate sub, so you can extend it or remove plugins in a child bundle.
 
-=head2 $class=$ps->get_class ($plugin); 
+=head2 get_plugin
+
+Returns the plugin object associated with the phase. Returns undef on failure.
+
+  $plugin=$ps->get_plugin ($phase);
+
+=head2 default_phase
+
+Makes a default phase from a class name. Expects a $plugin_class. If prefix 
+is defined it use tail and removes remaining '::'. Without prefix default is 
+just the last element of the class name:
+
+    $ps=Plugin-Tiny->new;
+    $ps->default_phase(My::Plugin::Long::Example); # returns 'Example'
+
+    $ps=Plugin-Tiny->new(prefix=>'My::Plugin::');
+    $ps->default_phase(My::Plugin::Long::Example); # returns 'LongExample'
+
+Returns scalar or undef.
+
+=head2 get_class 
 
 returns the plugin's class. A bit like C<ref $plugin>. Not sure what it returns
 on error. Todo!
 
-=head2 $phase=$ps->get_phase ($plugin); 
+  $class=$ps->get_class ($plugin);
+
+=head2 get_phase
 
 returns the plugin's phase. Returns undef on failure. Normally, you should not
-need this.
+need this:
+  $phase=$ps->get_phase ($plugin);
 
 =head1 AUTHOR
 
