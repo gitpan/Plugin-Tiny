@@ -14,7 +14,7 @@ my %WriteMakefileArgs = (
   "BUILD_REQUIRES" => {
     "File::Spec" => 0,
     "FindBin" => 0,
-    "Moose::Role" => 0,
+    "Moo::Role" => 0,
     "Test::More" => 0,
     "Try::Tiny" => 0
   },
@@ -27,14 +27,15 @@ my %WriteMakefileArgs = (
   "NAME" => "Plugin::Tiny",
   "PREREQ_PM" => {
     "Carp" => 0,
-    "Class::Load" => 0,
-    "Moose" => 0,
+    "Module::Runtime" => 0,
+    "Moo" => 0,
+    "MooX::Types::MooseLike::Base" => 0,
     "Scalar::Util" => 0,
-    "namespace::autoclean" => 0,
+    "namespace::clean" => 0,
     "strict" => 0,
     "warnings" => 0
   },
-  "VERSION" => "0.009",
+  "VERSION" => "0.010",
   "test" => {
     "TESTS" => "t/*.t"
   }

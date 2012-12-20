@@ -1,46 +1,47 @@
 #ABSTRACT: A tiny plugin system for perl
 package Plugin::Tiny;
 {
-  $Plugin::Tiny::VERSION = '0.009';
+  $Plugin::Tiny::VERSION = '0.010';
 }
 use strict;
 use warnings;
 use Carp 'confess';
-use Class::Load 'load_class';
+use Module::Runtime 'use_package_optimistically';
 use Scalar::Util 'blessed';
-use Moose;
-use namespace::autoclean;
+use Moo;
+use MooX::Types::MooseLike::Base qw(Bool Str HashRef ArrayRef Object);
+use namespace::clean;
 
 #use Data::Dumper;
 
 
 has '_registry' => (    #href with phases and plugin objects
     is       => 'ro',
-    isa      => 'HashRef[Object]',
+    isa      => HashRef[Object],
     default  => sub { {} },
     init_arg => undef,
 );
 
 
-has 'debug' => (is => 'ro', isa => 'Bool', default => sub {0});
+has 'debug' => (is => 'ro', isa => Bool, default => sub {0});
 
 
-has 'prefix' => (is => 'ro', isa => 'Str');
+has 'prefix' => (is => 'ro', isa => Str);
 
 
-has 'role' => (is => 'ro', isa => 'ArrayRef[Str]');
+has 'role' => (is => 'ro', isa => ArrayRef[Str]);
 
 
 #
 # METHODS
 #
 
+
 around BUILDARGS => sub {
     my $orig  = shift;
     my $class = shift;
     my %args  = @_;
 
-    #re-write as arrayref if not yet arrayref
     if ($args{role} && ref ($args{role}) ne 'ARRAY'){
         $args{role}=[$args{role}];
     }
@@ -69,7 +70,7 @@ overwrite the current plugin with a new one, use 'force=>1'.
 END
     }
 
-    load_class($plugin) or confess "Can't load '$plugin'";
+     use_package_optimistically($plugin)->can('new') or confess "Can't load '$plugin'";
 
     my $roles = $self->role if $self->role;    #default role
     $roles = delete $args{role} if exists $args{role};
@@ -171,8 +172,6 @@ sub _debug {
     print $_[1] . "\n" if $_[0]->debug;
 }
 
-__PACKAGE__->meta->make_immutable;
-
 1;
 
 __END__
@@ -184,7 +183,7 @@ Plugin::Tiny - A tiny plugin system for perl
 
 =head1 VERSION
 
-version 0.009
+version 0.010
 
 =head1 SYNOPSIS
 
@@ -212,6 +211,10 @@ version 0.009
 Plugin::Tiny is minimalistic plugin system for perl. Each plugin is associated
 with a keyword (referred to as phase). A limitation of Plugin::Tiny is that 
 each phase can have only one plugin. 
+
+Plugin::Tiny calls itself tiny because it doesn't attempt to solve all problems
+plugin systems could solve, because it consists of one smallish package, and it 
+doesn't depend on a whole lot.
 
 =head1 ATTRIBUTES
 
@@ -243,6 +246,10 @@ overwritten in C<register>.
     role=>'Role::One'                   #or a scalar
 
 =head1 METHODS
+
+=head2 BUILDARGS
+
+Re-write init argument 'role' as arrayref if not yet arrayref.
 
 =head2 register
 
@@ -425,6 +432,10 @@ still need unique phases for each plugin:
     my $one=$self->plugins->get('One');
     $one->do_something(@args);  
   }
+
+=head1 CONTRIBUTORS
+
+Thanks to Toby Inkster for making Plugin::Tiny tinier.
 
 =head1 AUTHOR
 
