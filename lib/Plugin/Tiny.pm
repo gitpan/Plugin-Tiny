@@ -1,8 +1,6 @@
 #ABSTRACT: A tiny plugin system for perl
 package Plugin::Tiny;
-{
-  $Plugin::Tiny::VERSION = '0.011';
-}
+$Plugin::Tiny::VERSION = '0.012';
 use strict;
 use warnings;
 use Carp 'confess';
@@ -176,7 +174,10 @@ sub _debug {
 1;
 
 __END__
+
 =pod
+
+=encoding UTF-8
 
 =head1 NAME
 
@@ -184,7 +185,7 @@ Plugin::Tiny - A tiny plugin system for perl
 
 =head1 VERSION
 
-version 0.011
+version 0.012
 
 =head1 SYNOPSIS
 
@@ -456,4 +457,3 @@ This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.
 
 =cut
-

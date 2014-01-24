@@ -2,7 +2,7 @@ NAME
     Plugin::Tiny - A tiny plugin system for perl
 
 VERSION
-    version 0.011
+    version 0.012
 
 SYNOPSIS
       #a complete 'Hello World' plugin

@@ -4,7 +4,7 @@
       "Maurice Mengel <mauricemengel@gmail.com>"
    ],
    "dynamic_config" : 0,
-   "generated_by" : "Dist::Zilla version 4.300028, CPAN::Meta::Converter version 2.120921",
+   "generated_by" : "Dist::Zilla version 5.012, CPAN::Meta::Converter version 2.132830",
    "license" : [
       "perl_5"
    ],
@@ -22,6 +22,8 @@
       "develop" : {
          "requires" : {
             "Pod::Coverage::TrustPod" : "0",
+            "Test::More" : "0",
+            "Test::NoTabs" : "0",
             "Test::Pod" : "1.41",
             "Test::Pod::Coverage" : "1.08"
          }
@@ -30,7 +32,7 @@
          "requires" : {
             "Carp" : "0",
             "Module::Runtime" : "0",
-            "Moo" : "0",
+            "Moo" : "1.002000",
             "MooX::Types::MooseLike::Base" : "0",
             "Scalar::Util" : "0",
             "namespace::clean" : "0",
@@ -45,14 +47,15 @@
             "FindBin" : "0",
             "Moo::Role" : "0",
             "Test::More" : "0",
-            "Try::Tiny" : "0"
+            "Try::Tiny" : "0",
+            "lib" : "0"
          }
       }
    },
    "release_status" : "stable",
    "resources" : {
       "bugtracker" : {
-         "web" : "https://rt.cpan.org/Public/Dist/Display.html?Name=Plugin-Tiny"
+         "web" : "https://github.com/mokko/p5-Plugin-Tiny/issues"
       },
       "homepage" : "https://github.com/mokko/p5-Plugin-Tiny/wiki",
       "repository" : {
@@ -61,6 +64,6 @@
          "web" : "https://github.com/mokko/p5-Plugin-Tiny"
       }
    },
-   "version" : "0.011"
+   "version" : "0.012"
 }
 

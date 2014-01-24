@@ -8,10 +8,11 @@ build_requires:
   Moo::Role: 0
   Test::More: 0
   Try::Tiny: 0
+  lib: 0
 configure_requires:
   ExtUtils::MakeMaker: 6.30
 dynamic_config: 0
-generated_by: 'Dist::Zilla version 4.300028, CPAN::Meta::Converter version 2.120921'
+generated_by: 'Dist::Zilla version 5.012, CPAN::Meta::Converter version 2.132830'
 license: perl
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
@@ -20,7 +21,7 @@ name: Plugin-Tiny
 requires:
   Carp: 0
   Module::Runtime: 0
-  Moo: 0
+  Moo: 1.002000
   MooX::Types::MooseLike::Base: 0
   Scalar::Util: 0
   namespace::clean: 0
@@ -28,7 +29,7 @@ requires:
   strict: 0
   warnings: 0
 resources:
-  bugtracker: https://rt.cpan.org/Public/Dist/Display.html?Name=Plugin-Tiny
+  bugtracker: https://github.com/mokko/p5-Plugin-Tiny/issues
   homepage: https://github.com/mokko/p5-Plugin-Tiny/wiki
   repository: git://github.com/mokko/p5-Plugin-Tiny.git
-version: 0.011
+version: 0.012
